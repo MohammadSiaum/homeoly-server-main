@@ -4,20 +4,29 @@ const Patient = require("../models/patient");
 const mongoose = require('mongoose');
 
 
-// All patient
-router.get('/', async(req, res) => {
-    const query = {};
-    const users = await Patient.find(query);
-    res.status(200).json(users);
+// All patient and count total patient by Doctor ID
+router.get('/:id', async(req, res) => {
+
+  try {
+
+    const { id } = req.params;
+    const patients = await Patient.find({doctorId: id});
+    const totalPatients = patients.length;
+    res.status(200).json({patients, totalPatients});
+
+  } catch(error) {
+    return res.status(500).json({ status: 'fail', message: error.message });
+  }
 });
 
 // Find a patient by ID
 router.get('/patient/:id', async (req, res) => {
+  const doctorId = req.headers.doctor_id;
   const { id } = req.params;
   // console.log(id);
 
   try {
-    const patient = await Patient.findById({_id: id});
+    const patient = await Patient.findOne({doctorId, _id: id});
 
     if (!patient) {
       return res.status(404).send('Patient not found');
@@ -29,6 +38,38 @@ router.get('/patient/:id', async (req, res) => {
     return res.status(500).send('Error finding patient');
   }
 });
+
+// Find a Male patient by Doctor ID
+router.get('/male/:id', async (req, res) => {
+  const { id } = req.params;
+  try {
+    const malePatients = await Patient.find({ doctorId: id, gender: 'Male' });
+
+    const malePatientsCount = malePatients.length;
+
+    return res.status(200).json({ status: 'success', data: { totalMale: malePatientsCount } });
+
+  } catch (error) {
+    return res.status(500).json({ status: 'fail', message: error.message });
+  }
+});
+
+// Find a Female patient by Doctor ID
+router.get('/female/:id', async (req, res) => {
+  const { id } = req.params;
+  try {
+    const femalePatients = await Patient.find({ doctorId: id, gender: 'Female' });
+
+    const femalePatientsCount = femalePatients.length;
+
+    return res.status(200).json({ status: 'success', data: { totalFemale: femalePatientsCount } });
+
+  } catch (error) {
+    return res.status(500).json({ status: 'fail', message: error.message });
+  }
+});
+
+
 
 // Add patient
 router.post('/add-patient', async(req, res) => {
@@ -75,7 +116,9 @@ router.post('/add-patient', async(req, res) => {
 // update patient
 router.put('/update-patient/:id', async(req, res) => {
   // console.log(req.body);
+  const doctorId = req.headers.doctor_id;
   const { id } = req.params;
+  // console.log(id);
   const {
       image,
       fullName,
@@ -87,11 +130,10 @@ router.put('/update-patient/:id', async(req, res) => {
       presentAddress,
       permanentAddress
     } = req.body;
-    // console.log(req.body, id);
 
     try {
-      const updatedPatient = await Patient.findByIdAndUpdate(
-        {_id: id},
+      const updatedPatient = await Patient.findOneAndUpdate(
+        {doctorId, _id: id},
 
         {
           image,
@@ -110,7 +152,7 @@ router.put('/update-patient/:id', async(req, res) => {
     if(!updatedPatient) {
       return res.status(404).send('Patient not found');
     }
-  
+    
     return res.status(200).json(updatedPatient);
 
     } catch (error) {
@@ -122,9 +164,11 @@ router.put('/update-patient/:id', async(req, res) => {
 
 // Delete a patient by ID
 router.delete('/delete-patient/:id', async (req, res) => {
+  const doctorId = req.headers.doctor_id;
   const { id } = req.params;
+
   try {
-    const deletedPatient = await Patient.findByIdAndDelete({_id: id});
+    const deletedPatient = await Patient.findOneAndDelete({doctorId, _id: id});
 
     if (!deletedPatient) {
       return res.status(404).send('Patient not found');

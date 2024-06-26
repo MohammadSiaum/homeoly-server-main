@@ -1,33 +1,31 @@
-const { default: mongoose } = require("mongoose");
+const  mongoose = require("mongoose");
 const BillingOverviewModel = require("../../models/billingOverview");
-const Patient = require("../../models/patient");
+
+
 exports.createBillingOverviewController = async (req, res) => {
-  const { patientId, totalBill, receivedBill, draft } = req.body;
-  const doctorId = patientId;
-  console.log(req.body, doctorId);
-  const total = Number(totalBill);
-  const received = Number(receivedBill)
+  const {doctorId, patientId, totalBill, receivedBill, draft } = req.body;
+
   try {
-    if (!patientId || !totalBill || !receivedBill) {
+    if (!doctorId || !patientId || !totalBill || !receivedBill) {
       return res
         .status(400)
         .json({ status: "fail", data: "All fields are required" });
     }
 
-    if (received > total) {
+    if (receivedBill > totalBill) {
       return res.status(400).json({
         status: "fail",
         data: "Received bill cannot be greater than total bill",
       });
     }
 
-    const DueBill = total - received;
+    const DueBill = Number(totalBill) - Number(receivedBill);
 
     const data = await BillingOverviewModel.create({
       doctorId,
       patientId,
-      totalBill: total,
-      receivedBill: received,
+      totalBill,
+      receivedBill,
       DueBill,
       draft,
     });
@@ -39,25 +37,20 @@ exports.createBillingOverviewController = async (req, res) => {
 };
 
 exports.getAllBillingOverviewController = async (req, res) => {
-  const doctorId = req.headers.userId;
-  const {userId} = req.body
+  const doctorId = req.headers.doctor_id;
+  // console.log(doctorId);
 
   try {
-    const data = await BillingOverviewModel.find({ userId });
-    const finalData = []
-    for(const d of data){
-      const patientId = d.patientId;
-      const patient = await Patient.findById(patientId)
-      finalData.push({fullName: patient.fullName, ...d})
-      console.log(patient.fullName);
-    }
-    return res.status(200).json({ status: "success", data: data });
+    const data = await BillingOverviewModel.find({ doctorId });
+    // console.log(data);
+
+    return res.status(200).json({ status: "success", data });
   } catch (error) {
     return res.status(400).json({ status: "fail", data: error });
   }
 };
 exports.getBillingOverviewControllerById = async (req, res) => {
-  const doctorId = req.headers.userId;
+  const doctorId = req.headers.doctor_id;
   const { id } = req.params;
 
   try {
@@ -72,7 +65,7 @@ exports.getBillingOverviewControllerById = async (req, res) => {
   }
 };
 exports.updateBillingOverviewController = async (req, res) => {
-  const doctorId = req.headers.userId;
+  const doctorId = req.headers.doctor_id;
   const { id } = req.params;
   const { totalBill, receivedBill } = req.body;
 
@@ -97,7 +90,7 @@ exports.updateBillingOverviewController = async (req, res) => {
 };
 
 exports.deleteBillingOverviewController = async (req, res) => {
-  const doctorId = req.headers.userId;
+  const doctorId = req.headers.doctor_id;
   const { id } = req.params;
 
   try {

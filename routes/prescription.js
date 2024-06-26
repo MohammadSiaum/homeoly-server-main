@@ -18,21 +18,27 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({extended: false}));
 
-// All users
-router.get('/', async(req, res) => {
-    const query = {};
-    const result = await Prescription.find(query);
+// All prescription for a patient by DoctorId
+router.get('/:id', async(req, res) => {
+  try {
+ 
+    const { id } = req.params;
+    const result = await Prescription.find({doctorId: id});
     res.status(200).json(result);
+
+  } catch(error) {
+    return res.status(500).json({ status: 'fail', message: error.message });
+  }
 });
 
-// Find a prescription by ID
-router.get('/prescription/:id', async (req, res) => {
+// Find prescription by patient Id
+router.get('/all-prescription/:id', async (req, res) => {
+    const doctorId = req.headers.doctor_id;
     const { id } = req.params;
-    // console.log(id);
+    // console.log(doctorId);
   
     try {
-      const prescription = await Prescription.findById(id);
-  
+      const prescription = await Prescription.find({doctorId, patientId: id});
       if (!prescription) {
         return res.status(404).send('Prescription not found');
       }
@@ -43,6 +49,25 @@ router.get('/prescription/:id', async (req, res) => {
       return res.status(500).send('Error finding prescription');
     }
   });
+
+// Find prescription by prescription Id --> single prescription
+router.get('/prescription/:id', async (req, res) => {
+  const doctorId = req.headers.doctor_id;
+  const patientId = req.headers.patient_id;
+  const { id } = req.params;
+  
+  try {
+    const prescription = await Prescription.findOne({doctorId, patientId, _id: id});
+    if (!prescription) {
+      return res.status(404).send('Prescription not found');
+    }
+
+    return res.status(200).json(prescription);
+  } catch (error) {
+    console.error('Error finding prescription:', error);
+    return res.status(500).send('Error finding prescription');
+  }
+});
 
 // Add prescription
 router.post('/add-prescription', async(req, res) => {
@@ -81,6 +106,7 @@ router.post('/add-prescription', async(req, res) => {
 // update prescription
 router.put('/update-prescription/:id', async(req, res) => {
     // console.log(req.body);
+    const doctorId = req.headers.doctor_id;
     const { id } = req.params;
 
     const {
@@ -91,8 +117,8 @@ router.put('/update-prescription/:id', async(req, res) => {
       } = req.body;
   
       try {
-        const updatedPrescription = await Prescription.findByIdAndUpdate(
-          {_id: id},
+        const updatedPrescription = await Prescription.findOneAndUpdate(
+          {doctorId, _id: id},
   
           {
             symptoms,
@@ -118,10 +144,11 @@ router.put('/update-prescription/:id', async(req, res) => {
 
 // Delete a prescription by ID
 router.delete('/delete-prescription/:id', async (req, res) => {
+    const doctorId = req.headers.doctor_id;
     const { id } = req.params;
   
     try {
-      const deletedPrescription = await Prescription.findByIdAndDelete({_id: id});
+      const deletedPrescription = await Prescription.findOneAndDelete({doctorId, _id: id});
   
       if (!deletedPrescription) {
         return res.status(404).send('Prescription not found');

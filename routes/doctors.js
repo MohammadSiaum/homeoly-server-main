@@ -24,16 +24,6 @@ router.get('/', async(req, res) => {
     res.status(200).json(users);
 });
 
-// one user by id --> user id
-// router.get('/user', async(req, res) => {
-//     const { _id } = req.body;
-//     const query = { _id };
-//     const user = await User.findOne(query);
-//     const doctor = await Doctor.findOne({userId: _id})
-
-//     res.status(200).json(...user, ...doctor);
-// });
-
 
 // Find a user by ID
 router.get('/doctor/:id', async (req, res) => {
