@@ -31,7 +31,7 @@ router.post('/user/signup', async (req, res) => {
         password: hashedPassword 
     });
 
-    console.log(user);
+    // console.log(user);
 
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     user.otp = otp;
@@ -53,7 +53,7 @@ router.post('/user/signup', async (req, res) => {
     const mailOptions = {
       from: {
         name: 'Homeoly',
-        address: process.env.APP_USER
+        address: process.env.APP_USER,
       },
       to: user.email,
       subject: 'OTP for Account Verification',
@@ -62,7 +62,8 @@ router.post('/user/signup', async (req, res) => {
     }
 
     const info = await transporter.sendMail(mailOptions);
-    console.log("Message sent: %s", info.messageId);
+    // console.log("Message sent: %s", info.messageId);
+    res.status(200).send({status: "OK", message: "Succressfully created."});
 
   } catch (error) {
     res.status(500).send('Error in signup');
