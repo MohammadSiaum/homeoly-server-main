@@ -6,14 +6,10 @@ const patientSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     required: true
   },
-  doctorId: {
-    type: mongoose.Schema.Types.ObjectId,
-    required: true
-  },
   
   image: {
       type: String,
-      required: true
+      required: false
   },
 
   fullName: {
@@ -22,12 +18,13 @@ const patientSchema = new mongoose.Schema({
   },
 
   dateOfBirth: {
-    type: String,
-    required: true
+    type: Date,
+    required: false
   },
 
   gender: {
     type: String,
+    enum: ['Male', 'Female'],
     required: true
   },
 

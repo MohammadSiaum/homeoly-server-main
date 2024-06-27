@@ -3,13 +3,15 @@ const router = express.Router();
 const Doctor = require("../models/doctor");
 const User = require("../models/user");
 const Prescription = require("../models/prescription");
-const mongoose = require('mongoose');
+// const mongoose = require('mongoose');
+const verifyAuthMiddleware = require("../middlewares/verifyAuthMiddleware");
+
 
 const cors = require("cors");
 const app = express();
-const connectDB = require("../db/connect");
-const bcrypt = require('bcrypt');
-const jwt = require('jsonwebtoken');
+// const connectDB = require("../db/connect");
+// const bcrypt = require('bcrypt');
+// const jwt = require('jsonwebtoken');
 
 require("dotenv").config();
 
@@ -18,12 +20,15 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({extended: false}));
 
-// All prescription for a patient by DoctorId
-router.get('/:id', async(req, res) => {
+// All prescription for a patient by userId
+router.get('/', verifyAuthMiddleware, async(req, res) => {
   try {
  
-    const { id } = req.params;
-    const result = await Prescription.find({doctorId: id});
+    // const id = req.headers.doctor_id;
+  const userId = req.headers.userId;
+
+    // const { id } = req.params;
+    const result = await Prescription.find({userId});
     res.status(200).json(result);
 
   } catch(error) {
@@ -31,14 +36,16 @@ router.get('/:id', async(req, res) => {
   }
 });
 
-// Find prescription by patient Id
-router.get('/all-prescription/:id', async (req, res) => {
-    const doctorId = req.headers.doctor_id;
+// Find prescriptions by patient Id
+router.get('/all-prescription/:id', verifyAuthMiddleware, async (req, res) => {
+    // const doctorId = req.headers.doctor_id;
+    const userId = req.headers.userId;
+    
     const { id } = req.params;
     // console.log(doctorId);
   
     try {
-      const prescription = await Prescription.find({doctorId, patientId: id});
+      const prescription = await Prescription.find({userId, patientId: id});
       if (!prescription) {
         return res.status(404).send('Prescription not found');
       }
@@ -51,13 +58,13 @@ router.get('/all-prescription/:id', async (req, res) => {
   });
 
 // Find prescription by prescription Id --> single prescription
-router.get('/prescription/:id', async (req, res) => {
-  const doctorId = req.headers.doctor_id;
-  const patientId = req.headers.patient_id;
+router.get('/prescription/:id', verifyAuthMiddleware, async (req, res) => {
+  // const doctorId = req.headers.doctor_id;
+  const userId = req.headers.userId;
   const { id } = req.params;
   
   try {
-    const prescription = await Prescription.findOne({doctorId, patientId, _id: id});
+    const prescription = await Prescription.findOne({userId, _id: id});
     if (!prescription) {
       return res.status(404).send('Prescription not found');
     }
@@ -70,11 +77,13 @@ router.get('/prescription/:id', async (req, res) => {
 });
 
 // Add prescription
-router.post('/add-prescription', async(req, res) => {
+router.post('/add-prescription',verifyAuthMiddleware, async(req, res) => {
     // console.log(req.body);
+  // const doctorId = req.headers.doctor_id;
+  const userId = req.headers.userId;
+
+
     const {
-        userId,
-        doctorId,
         patientId,
         symptoms,
         prescription,
@@ -84,9 +93,15 @@ router.post('/add-prescription', async(req, res) => {
       } = req.body;
   
       try {
+
+        if (!patientId || !userId || !symptoms || !prescription || !billing) {
+          return res
+            .status(400)
+            .json({ status: "fail", data: "All fields are required" });
+        }
+
         const newPrescription = new Prescription({
             userId,
-            doctorId,
             patientId,
             symptoms,
             prescription,
@@ -104,9 +119,11 @@ router.post('/add-prescription', async(req, res) => {
 });
 
 // update prescription
-router.put('/update-prescription/:id', async(req, res) => {
+router.put('/update-prescription/:id', verifyAuthMiddleware, async(req, res) => {
     // console.log(req.body);
-    const doctorId = req.headers.doctor_id;
+    // const doctorId = req.headers.doctor_id;
+
+    const userId = req.headers.userId;
     const { id } = req.params;
 
     const {
@@ -117,8 +134,14 @@ router.put('/update-prescription/:id', async(req, res) => {
       } = req.body;
   
       try {
+        if (!userId || !id || !symptoms || !prescription || !billing) {
+          return res
+            .status(400)
+            .json({ status: "fail", data: "All fields are required" });
+        }
+
         const updatedPrescription = await Prescription.findOneAndUpdate(
-          {doctorId, _id: id},
+          {userId, _id: id},
   
           {
             symptoms,
@@ -143,12 +166,12 @@ router.put('/update-prescription/:id', async(req, res) => {
   });
 
 // Delete a prescription by ID
-router.delete('/delete-prescription/:id', async (req, res) => {
-    const doctorId = req.headers.doctor_id;
+router.delete('/delete-prescription/:id', verifyAuthMiddleware, async (req, res) => {
+    const userId = req.headers.userId;
     const { id } = req.params;
   
     try {
-      const deletedPrescription = await Prescription.findOneAndDelete({doctorId, _id: id});
+      const deletedPrescription = await Prescription.findOneAndDelete({userId, _id: id});
   
       if (!deletedPrescription) {
         return res.status(404).send('Prescription not found');

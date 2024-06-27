@@ -8,31 +8,31 @@ const {
   updateBillingOverviewController,
   deleteBillingOverviewController,
 } = require("../controllers/billingOverview/billingOverviewcontroller");
-// const verifyAuthMiddleware = require("../middlewares/verifyAuthMiddleware");
+const verifyAuthMiddleware = require("../middlewares/verifyAuthMiddleware");
 
 router.post(
   "/create-billing-overview",
-  // verifyAuthMiddleware,
+  verifyAuthMiddleware,
   createBillingOverviewController
 );
 router.get(
   "/get-all-billing-overview",
-  // verifyAuthMiddleware,
+  verifyAuthMiddleware,
   getAllBillingOverviewController
 );
 router.get(
   "/get-billing-overview/:id",
-  // verifyAuthMiddleware,
+  verifyAuthMiddleware,
   getBillingOverviewControllerById
 );
 router.post(
   "/update-billing-overview/:id",
-  // verifyAuthMiddleware,
+  verifyAuthMiddleware,
   updateBillingOverviewController
 );
 router.post(
   "/delete-billing-overview/:id",
-  // verifyAuthMiddleware,
+  verifyAuthMiddleware,
   deleteBillingOverviewController
 );
 

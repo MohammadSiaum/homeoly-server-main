@@ -2,11 +2,13 @@ const express  = require("express");
 const router = express.Router();
 const HelpAndSup = require("../models/helpAndSupport");
 const mongoose = require('mongoose');
+const verifyAuthMiddleware = require("../middlewares/verifyAuthMiddleware");
+
 
 const cors = require("cors");
 const app = express();
 
-const jwt = require('jsonwebtoken');
+// const jwt = require('jsonwebtoken');
 
 require("dotenv").config();
 
@@ -16,22 +18,32 @@ app.use(express.json());
 app.use(express.urlencoded({extended: false}));
 
 // All message helpAndSupport
-router.get('/all', async(req, res) => {
+router.get('/all', verifyAuthMiddleware, async(req, res) => {
+    // const id = req.headers.doctor_id;
+    const userId = req.headers.userId;
+
+    if (!userId) {
+      return res.status(404).send('Help And Support not found');
+    }
     const query = {};
     const result = await HelpAndSup.find(query);
     res.status(200).json(result);
 });
 
-// Find a helpAndSupport by doctorsID
-router.get('/message/:id', async (req, res) => {
-    const { id } = req.params;
+// Find  helpAndSupport by doctorId
+router.get('/message', verifyAuthMiddleware, async (req, res) => {
+    // const { id } = req.params;
+  // const id = req.headers.doctor_id;
+  const userId = req.headers.userId;
+
+
     // console.log(id);
   
     try {
-      const helpAndSup = await HelpAndSup.find({doctorId: id});
+      const helpAndSup = await HelpAndSup.find({userId});
   
       if (!helpAndSup) {
-        return res.status(404).send('Prescription not found');
+        return res.status(404).send('Help And Support not found');
       }
 
       return res.status(200).json(helpAndSup);
@@ -42,11 +54,12 @@ router.get('/message/:id', async (req, res) => {
   });
 
 // Add prescription
-router.post('/new-message', async(req, res) => {
+router.post('/new-message', verifyAuthMiddleware, async(req, res) => {
     // console.log(req.body);
+  // const doctorId = req.headers.doctor_id;
+  const userId = req.headers.userId;
+
     const {
-        userId,
-        doctorId,
         fullName,
         phone,
         email,
@@ -57,7 +70,6 @@ router.post('/new-message', async(req, res) => {
       try {
         const newHelpAndSup = new HelpAndSup({
             userId,
-            doctorId,
             fullName,
             phone,
             email,

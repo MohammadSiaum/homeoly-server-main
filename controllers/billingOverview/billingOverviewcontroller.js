@@ -3,10 +3,11 @@ const BillingOverviewModel = require("../../models/billingOverview");
 
 
 exports.createBillingOverviewController = async (req, res) => {
-  const {doctorId, patientId, totalBill, receivedBill, draft } = req.body;
+  const { patientId, totalBill, receivedBill, draft } = req.body;
+  const userId = req.headers.userId;
 
   try {
-    if (!doctorId || !patientId || !totalBill || !receivedBill) {
+    if (!userId || !patientId || !totalBill || !receivedBill) {
       return res
         .status(400)
         .json({ status: "fail", data: "All fields are required" });
@@ -22,7 +23,7 @@ exports.createBillingOverviewController = async (req, res) => {
     const DueBill = Number(totalBill) - Number(receivedBill);
 
     const data = await BillingOverviewModel.create({
-      doctorId,
+      userId,
       patientId,
       totalBill,
       receivedBill,
@@ -37,11 +38,11 @@ exports.createBillingOverviewController = async (req, res) => {
 };
 
 exports.getAllBillingOverviewController = async (req, res) => {
-  const doctorId = req.headers.doctor_id;
+  const userId = req.headers.userId;
   // console.log(doctorId);
 
   try {
-    const data = await BillingOverviewModel.find({ doctorId });
+    const data = await BillingOverviewModel.find({ userId });
     // console.log(data);
 
     return res.status(200).json({ status: "success", data });
@@ -50,12 +51,12 @@ exports.getAllBillingOverviewController = async (req, res) => {
   }
 };
 exports.getBillingOverviewControllerById = async (req, res) => {
-  const doctorId = req.headers.doctor_id;
+  const userId = req.headers.userId;
   const { id } = req.params;
 
   try {
     if (mongoose.Types.ObjectId.isValid(id)) {
-      const data = await BillingOverviewModel.find({ doctorId, _id: id });
+      const data = await BillingOverviewModel.find({ userId, _id: id });
       return res.status(200).json({ status: "success", data });
     } else {
       return res.status(400).json({ status: "fail", data: "Invalid id" });
@@ -65,7 +66,7 @@ exports.getBillingOverviewControllerById = async (req, res) => {
   }
 };
 exports.updateBillingOverviewController = async (req, res) => {
-  const doctorId = req.headers.doctor_id;
+  const userId = req.headers.userId;
   const { id } = req.params;
   const { totalBill, receivedBill } = req.body;
 
@@ -75,7 +76,7 @@ exports.updateBillingOverviewController = async (req, res) => {
       req.body.DueBill = DueBill;
       const data = await BillingOverviewModel.findOneAndUpdate(
         {
-          doctorId,
+          userId,
           _id: id,
         },
         req.body
@@ -90,13 +91,15 @@ exports.updateBillingOverviewController = async (req, res) => {
 };
 
 exports.deleteBillingOverviewController = async (req, res) => {
-  const doctorId = req.headers.doctor_id;
+  // const doctorId = req.headers.doctor_id;
+  const userId = req.headers.userId;
+
   const { id } = req.params;
 
   try {
     if (mongoose.Types.ObjectId.isValid(id)) {
       const data = await BillingOverviewModel.findOneAndDelete({
-        doctorId,
+        userId,
         _id: id,
       });
       return res.status(200).json({ status: "success", data });

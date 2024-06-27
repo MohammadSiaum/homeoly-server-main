@@ -2,15 +2,18 @@ const express  = require("express");
 const router = express.Router();
 const Patient = require("../models/patient");
 const mongoose = require('mongoose');
+const verifyAuthMiddleware = require("../middlewares/verifyAuthMiddleware");
+
 
 
 // All patient and count total patient by Doctor ID
-router.get('/:id', async(req, res) => {
+router.get('/', verifyAuthMiddleware, async(req, res) => {
 
   try {
 
-    const { id } = req.params;
-    const patients = await Patient.find({doctorId: id});
+    const userId = req.headers.userId;
+    // const { id } = req.params;
+    const patients = await Patient.find({userId});
     const totalPatients = patients.length;
     res.status(200).json({patients, totalPatients});
 
@@ -20,13 +23,15 @@ router.get('/:id', async(req, res) => {
 });
 
 // Find a patient by ID
-router.get('/patient/:id', async (req, res) => {
-  const doctorId = req.headers.doctor_id;
+router.get('/patient/:id', verifyAuthMiddleware, async (req, res) => {
+  // const doctorId = req.headers.doctor_id;
+
+  const userId = req.headers.userId;
   const { id } = req.params;
   // console.log(id);
 
   try {
-    const patient = await Patient.findOne({doctorId, _id: id});
+    const patient = await Patient.findOne({userId, _id: id});
 
     if (!patient) {
       return res.status(404).send('Patient not found');
@@ -39,11 +44,15 @@ router.get('/patient/:id', async (req, res) => {
   }
 });
 
-// Find a Male patient by Doctor ID
-router.get('/male/:id', async (req, res) => {
-  const { id } = req.params;
+// Find a Male patient by userId
+router.get('/male',verifyAuthMiddleware, async (req, res) => {
+  // const { id } = req.params;
+  // const id = req.headers.doctor_id;
+  const userId = req.headers.userId;
+
+
   try {
-    const malePatients = await Patient.find({ doctorId: id, gender: 'Male' });
+    const malePatients = await Patient.find({ userId, gender: 'Male' });
 
     const malePatientsCount = malePatients.length;
 
@@ -55,10 +64,14 @@ router.get('/male/:id', async (req, res) => {
 });
 
 // Find a Female patient by Doctor ID
-router.get('/female/:id', async (req, res) => {
-  const { id } = req.params;
+router.get('/female', verifyAuthMiddleware, async (req, res) => {
+  // const { id } = req.params;
+  // const id = req.headers.doctor_id;
+  const userId = req.headers.userId;
+
+
   try {
-    const femalePatients = await Patient.find({ doctorId: id, gender: 'Female' });
+    const femalePatients = await Patient.find({ userId, gender: 'Female' });
 
     const femalePatientsCount = femalePatients.length;
 
@@ -72,11 +85,10 @@ router.get('/female/:id', async (req, res) => {
 
 
 // Add patient
-router.post('/add-patient', async(req, res) => {
-    console.log(req.body);
+router.post('/add-patient', verifyAuthMiddleware, async(req, res) => {
+    // console.log(req.body);
+    const userId = req.headers.userId;
     const {
-        userId,
-        doctorId,
         image,
         fullName,
         email,
@@ -89,9 +101,14 @@ router.post('/add-patient', async(req, res) => {
       } = req.body;
   
       try {
+        if (!userId || !email || !fullName || !gender || !religion || !presentAddress || !permanentAddress) {
+          return res
+            .status(400)
+            .json({ status: "fail", data: "All fields are required" });
+        }
+
         const newPatient = new Patient({
             userId,
-            doctorId,
             image,
             fullName,
             email,
@@ -114,9 +131,9 @@ router.post('/add-patient', async(req, res) => {
 });
 
 // update patient
-router.put('/update-patient/:id', async(req, res) => {
+router.put('/update-patient/:id', verifyAuthMiddleware, async(req, res) => {
   // console.log(req.body);
-  const doctorId = req.headers.doctor_id;
+  const userId = req.headers.userId;
   const { id } = req.params;
   // console.log(id);
   const {
@@ -132,8 +149,14 @@ router.put('/update-patient/:id', async(req, res) => {
     } = req.body;
 
     try {
+      if (!userId || !id || !email || !fullName || !gender || !religion || !presentAddress || !permanentAddress) {
+        return res
+          .status(400)
+          .json({ status: "fail", data: "All fields are required" });
+      }
+
       const updatedPatient = await Patient.findOneAndUpdate(
-        {doctorId, _id: id},
+        {userId, _id: id},
 
         {
           image,
@@ -163,12 +186,12 @@ router.put('/update-patient/:id', async(req, res) => {
 });
 
 // Delete a patient by ID
-router.delete('/delete-patient/:id', async (req, res) => {
-  const doctorId = req.headers.doctor_id;
+router.delete('/delete-patient/:id', verifyAuthMiddleware, async (req, res) => {
+  const userId = req.headers.userId;
   const { id } = req.params;
 
   try {
-    const deletedPatient = await Patient.findOneAndDelete({doctorId, _id: id});
+    const deletedPatient = await Patient.findOneAndDelete({userId, _id: id});
 
     if (!deletedPatient) {
       return res.status(404).send('Patient not found');

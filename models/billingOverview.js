@@ -2,7 +2,7 @@ const mongoose = require("mongoose");
 
 const billingOverviewSchema = new mongoose.Schema(
   {
-    doctorId: {
+    userId: {
       type: mongoose.Schema.Types.ObjectId,
       required: true,
     },

@@ -11,11 +11,6 @@ const doctorSchema = new mongoose.Schema({
     required: false
   },
 
-  // fullName: {
-  //   type: String,
-  //   required: true,
-    
-  // },
   medicalName: {
     type: String,
     required: true,
@@ -34,24 +29,15 @@ const doctorSchema = new mongoose.Schema({
     type: Date,
     required: false
   },
-  specialty: {
-    type: String,
-    required: false
-  },
+  // specialty: {
+  //   type: String,
+  //   required: false
+  // },
   gender: {
     type: String,
     required: true
   },
-  // phone: {
-  //   type: String,
-  //   required: true,
-    
-  // },
-  // email: {
-  //   type: String,
-  //   required: true,
-  //   unique: true
-  // },
+  
   religion: {
     type: String,
     required: true
@@ -100,14 +86,7 @@ const doctorSchema = new mongoose.Schema({
       required: true
     }
   },
-  // otp: { 
-  //   type: String, 
-  //   required: false 
-  // },
-  // otpExpires: { 
-  //   type: Date, 
-  //   required: false 
-  // },
+  
   createdAt: {
     type: Date,
     default: Date.now
