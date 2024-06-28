@@ -43,9 +43,13 @@ const prescriptionSchema = new mongoose.Schema({
     },
     billingDate: {
       type: Date,
-      default: Date.now,
-      required: true
+      default: Date.now
     }
+  },
+
+  draft: {
+    type: Boolean,
+    default: false
   },
 
   createdAt: {

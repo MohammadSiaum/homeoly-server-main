@@ -9,10 +9,15 @@ const verifyAuthMiddleware = require("../middlewares/verifyAuthMiddleware");
 // All patient and count total patient by Doctor ID
 router.get('/', verifyAuthMiddleware, async(req, res) => {
 
-  try {
+  const userId = req.headers.userId;
 
-    const userId = req.headers.userId;
-    // const { id } = req.params;
+  try {
+    if (!userId) {
+      return res
+        .status(400)
+        .json({ status: "fail", data: "All fields are required" });
+    }
+
     const patients = await Patient.find({userId});
     const totalPatients = patients.length;
     res.status(200).json({patients, totalPatients});
@@ -52,6 +57,13 @@ router.get('/male',verifyAuthMiddleware, async (req, res) => {
 
 
   try {
+
+    if (!userId) {
+      return res
+        .status(400)
+        .json({ status: "fail", data: "All fields are required" });
+    }
+
     const malePatients = await Patient.find({ userId, gender: 'Male' });
 
     const malePatientsCount = malePatients.length;
@@ -65,12 +77,17 @@ router.get('/male',verifyAuthMiddleware, async (req, res) => {
 
 // Find a Female patient by Doctor ID
 router.get('/female', verifyAuthMiddleware, async (req, res) => {
-  // const { id } = req.params;
-  // const id = req.headers.doctor_id;
+  
   const userId = req.headers.userId;
 
-
   try {
+
+    if (!userId) {
+      return res
+        .status(400)
+        .json({ status: "fail", data: "All fields are required" });
+    }
+
     const femalePatients = await Patient.find({ userId, gender: 'Female' });
 
     const femalePatientsCount = femalePatients.length;
@@ -191,6 +208,13 @@ router.delete('/delete-patient/:id', verifyAuthMiddleware, async (req, res) => {
   const { id } = req.params;
 
   try {
+
+    if (!userId || !id) {
+      return res
+        .status(400)
+        .json({ status: "fail", data: "All fields are required" });
+    }
+
     const deletedPatient = await Patient.findOneAndDelete({userId, _id: id});
 
     if (!deletedPatient) {

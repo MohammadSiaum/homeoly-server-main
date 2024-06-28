@@ -68,6 +68,12 @@ router.post('/new-message', verifyAuthMiddleware, async(req, res) => {
       } = req.body;
   
       try {
+        if (!userId || !fullName || !email || !message) {
+          return res
+            .status(400)
+            .json({ status: "fail", data: "All fields are required" });
+        }
+
         const newHelpAndSup = new HelpAndSup({
             userId,
             fullName,

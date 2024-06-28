@@ -3,6 +3,10 @@ const router = express.Router();
 const Doctor = require("../models/doctor");
 const User = require("../models/user");
 const Prescription = require("../models/prescription");
+const Patient = require("../models/patient");
+const mongoose = require('mongoose');
+
+
 // const mongoose = require('mongoose');
 const verifyAuthMiddleware = require("../middlewares/verifyAuthMiddleware");
 
@@ -20,14 +24,20 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({extended: false}));
 
-// All prescription for a patient by userId
+// All prescription by userId(Doctor)
 router.get('/', verifyAuthMiddleware, async(req, res) => {
-  try {
- 
-    // const id = req.headers.doctor_id;
+
   const userId = req.headers.userId;
 
-    // const { id } = req.params;
+  try {
+
+    if (!userId) {
+      return res
+        .status(400)
+        .json({ status: "fail", data: "All fields are required" });
+    }
+
+    
     const result = await Prescription.find({userId});
     res.status(200).json(result);
 
@@ -36,7 +46,34 @@ router.get('/', verifyAuthMiddleware, async(req, res) => {
   }
 });
 
-// Find prescriptions by patient Id
+ // Finance dashboard
+router.get('/finance-dashboard', verifyAuthMiddleware, async(req, res) => {
+
+  const userId = req.headers.userId;
+
+  try {
+
+    if (!userId) {
+      return res
+        .status(400)
+        .json({ status: "fail", data: "All fields are required" });
+    }
+
+    const prescriptions = await Prescription.find({ userId });
+
+    const totalEarnings = prescriptions.reduce((sum, prescription) => sum + prescription.billing.receivedAmount, 0);
+    const totalDue = prescriptions.reduce((sum, prescription) => sum + prescription.billing.dueAmount, 0);
+    const totalDrafts = prescriptions.filter(prescription => prescription.draft).length;
+ 
+    // const result = await Prescription.find({userId});
+    res.status(200).json({prescriptions, totalEarnings, totalDue, totalDrafts});
+
+  } catch(error) {
+    return res.status(500).json({ status: 'fail', message: error.message });
+  }
+});
+
+// Find all prescriptions by patient Id
 router.get('/all-prescription/:id', verifyAuthMiddleware, async (req, res) => {
     // const doctorId = req.headers.doctor_id;
     const userId = req.headers.userId;
@@ -45,6 +82,13 @@ router.get('/all-prescription/:id', verifyAuthMiddleware, async (req, res) => {
     // console.log(doctorId);
   
     try {
+
+      if (!userId || !id) {
+        return res
+          .status(400)
+          .json({ status: "fail", data: "All fields are required" });
+      }
+
       const prescription = await Prescription.find({userId, patientId: id});
       if (!prescription) {
         return res.status(404).send('Prescription not found');
@@ -64,6 +108,12 @@ router.get('/prescription/:id', verifyAuthMiddleware, async (req, res) => {
   const { id } = req.params;
   
   try {
+    if (!userId || !id) {
+      return res
+        .status(400)
+        .json({ status: "fail", data: "All fields are required" });
+    }
+
     const prescription = await Prescription.findOne({userId, _id: id});
     if (!prescription) {
       return res.status(404).send('Prescription not found');
@@ -80,8 +130,7 @@ router.get('/prescription/:id', verifyAuthMiddleware, async (req, res) => {
 router.post('/add-prescription',verifyAuthMiddleware, async(req, res) => {
     // console.log(req.body);
   // const doctorId = req.headers.doctor_id;
-  const userId = req.headers.userId;
-
+    const userId = req.headers.userId;
 
     const {
         patientId,
@@ -89,6 +138,7 @@ router.post('/add-prescription',verifyAuthMiddleware, async(req, res) => {
         prescription,
         comment,
         billing,
+        draft
 
       } = req.body;
   
@@ -107,6 +157,7 @@ router.post('/add-prescription',verifyAuthMiddleware, async(req, res) => {
             prescription,
             comment,
             billing,
+            draft
         });
     
         const savedPrescription = await newPrescription.save();
@@ -131,6 +182,7 @@ router.put('/update-prescription/:id', verifyAuthMiddleware, async(req, res) => 
         prescription,
         comment,
         billing,
+        draft
       } = req.body;
   
       try {
@@ -148,6 +200,7 @@ router.put('/update-prescription/:id', verifyAuthMiddleware, async(req, res) => 
             prescription,
             comment,
             billing,
+            draft
         },
         { new: true, runValidators: true}
       );
@@ -165,12 +218,104 @@ router.put('/update-prescription/:id', verifyAuthMiddleware, async(req, res) => 
   
   });
 
-// Delete a prescription by ID
+  // update due
+  router.put('/update-due/:id', verifyAuthMiddleware, async(req, res) => {
+    // console.log(req.body);
+    // const doctorId = req.headers.doctor_id;
+
+    const userId = req.headers.userId;
+    const { id } = req.params;
+
+    const {
+
+        billing
+      } = req.body;
+  
+      try {
+        if (!userId || !id || !billing) {
+          return res
+            .status(400)
+            .json({ status: "fail", data: "All fields are required" });
+        }
+
+        const updatedPrescription = await Prescription.findOneAndUpdate(
+          {userId, _id: id},
+  
+          {
+            billing
+        },
+        { new: true, runValidators: true}
+      );
+  
+      if(!updatedPrescription) {
+        return res.status(404).send('Prescription not found');
+      }
+      
+      return res.status(200).json(updatedPrescription);
+  
+      } catch (error) {
+        console.error('Error updating due:', error);
+        return res.status(500).send('Error updating due');
+      }
+  
+  });
+
+  // update bill
+  router.put('/update-bill/:id', verifyAuthMiddleware, async(req, res) => {
+    // console.log(req.body);
+    // const doctorId = req.headers.doctor_id;
+
+    const userId = req.headers.userId;
+    const { id } = req.params;
+
+    const {
+
+        billing
+      } = req.body;
+  
+      try {
+        if (!userId || !id || !billing) {
+          return res
+            .status(400)
+            .json({ status: "fail", data: "All fields are required" });
+        }
+
+        const updatedPrescription = await Prescription.findOneAndUpdate(
+          {userId, _id: id},
+  
+          {
+            billing
+        },
+        { new: true, runValidators: true}
+      );
+  
+      if(!updatedPrescription) {
+        return res.status(404).send('Prescription not found');
+      }
+      
+      return res.status(200).json(updatedPrescription);
+  
+      } catch (error) {
+        console.error('Error updating bill:', error);
+        return res.status(500).send('Error updating bill');
+      }
+  
+  });
+
+
+// Delete a prescription by id
 router.delete('/delete-prescription/:id', verifyAuthMiddleware, async (req, res) => {
     const userId = req.headers.userId;
     const { id } = req.params;
   
     try {
+
+      if (!userId || !id) {
+        return res
+          .status(400)
+          .json({ status: "fail", data: "All fields are required" });
+      }
+
       const deletedPrescription = await Prescription.findOneAndDelete({userId, _id: id});
   
       if (!deletedPrescription) {
