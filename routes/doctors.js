@@ -32,11 +32,20 @@ router.get('/doctor', verifyAuthMiddleware, async (req, res) => {
     const user = await User.findById({_id: userId});
     // console.log(user);
 
-    if (!user || !doctor) {
-      return res.status(404).send('User not found');
-    }
+    // if (!user || !doctor) {
+    //   return res.status(404).send('User not found');
+    // }
+    // return res.status(200).json({ user,doctor });
 
-    return res.status(200).json({ user,doctor });
+    if (user) {
+      if (doctor) {
+        return res.status(200).json({ user,doctor });
+      }
+      return res.status(200).json({ user });
+
+    }
+    return res.status(404).send('User not found');
+
   } catch (error) {
     console.error('Error finding doctor:', error);
     return res.status(500).send('Error finding doctor');
