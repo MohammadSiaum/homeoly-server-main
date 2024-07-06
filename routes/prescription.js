@@ -60,13 +60,28 @@ router.get('/finance-dashboard', verifyAuthMiddleware, async(req, res) => {
     }
 
     const prescriptions = await Prescription.find({ userId });
+    
+    
+    const prescriptionsWithPatients = await Promise.all(
+      prescriptions.map(async (prescription) => {
+        const _id = prescription.patientId; // Assuming patientId is properly populated
+        const patient = await Patient.findById(_id);
+
+        // Merge patient details into prescription object
+        return {
+          ...prescription.toObject(),
+          patient: patient.toObject()
+        };
+      })
+    );
+
 
     const totalEarnings = prescriptions.reduce((sum, prescription) => sum + prescription.billing.receivedAmount, 0);
     const totalDue = prescriptions.reduce((sum, prescription) => sum + prescription.billing.dueAmount, 0);
     const totalDrafts = prescriptions.filter(prescription => prescription.draft).length;
  
     // const result = await Prescription.find({userId});
-    res.status(200).json({prescriptions, totalEarnings, totalDue, totalDrafts});
+    res.status(200).json({prescriptionsWithPatients, totalEarnings, totalDue, totalDrafts});
 
   } catch(error) {
     return res.status(500).json({ status: 'fail', message: error.message });
@@ -90,6 +105,8 @@ router.get('/all-prescription/:id', verifyAuthMiddleware, async (req, res) => {
       }
 
       const prescription = await Prescription.find({userId, patientId: id});
+      // console.log(prescription);
+
       if (!prescription) {
         return res.status(404).send('Prescription not found');
       }
